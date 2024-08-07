@@ -1,1 +1,59 @@
-<html></html>
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Chat Uygulaması</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="chat">
+    <h1>Chat Uygulaması</h1>
+    <div id="messages"></div>
+    <input type="text" id="username" placeholder="Kullanıcı adınızı yazın...">
+    <input type="text" id="message" placeholder="Mesajınızı yazın..." onkeydown="checkEnter(event)">
+    <button onclick="sendMessage()">Gönder</button>
+</div>
+
+<script>
+    var conn = new WebSocket('ws://localhost:8080');
+
+    conn.onopen = function(e) {
+        console.log("Bağlantı kuruldu!");
+    };
+
+    conn.onmessage = function(e) {
+        var data = JSON.parse(e.data);
+        var messages = document.getElementById('messages');
+        var message = document.createElement('div');
+        message.className = 'message ' + (data.sender === document.getElementById('username').value ? 'sent' : 'received');
+        message.textContent = data.sender + ': ' + data.message;
+        messages.appendChild(message);
+        messages.scrollTop = messages.scrollHeight;  // Yeni mesaj geldiğinde kaydırma çubuğunu en alta getir
+    };
+
+    function sendMessage() {
+        var message = document.getElementById('message').value;
+        var sender = document.getElementById('username').value;
+        if (message.trim() === '' || sender.trim() === '') return;
+
+        var data = JSON.stringify({ message: message, sender: sender });
+        conn.send(data);
+
+        var messages = document.getElementById('messages');
+        var messageElement = document.createElement('div');
+        messageElement.className = 'message sent';
+        messageElement.textContent = sender + ': ' + message;
+        messages.appendChild(messageElement);
+        messages.scrollTop = messages.scrollHeight;  // Yeni mesaj gönderildiğinde kaydırma çubuğunu en alta getir
+
+        document.getElementById('message').value = '';  // Mesaj gönderildikten sonra input alanını temizle
+    }
+
+    function checkEnter(event) {
+        if (event.keyCode === 13) {  // Enter tuşu kodu
+            sendMessage();
+        }
+    }
+</script>
+</body>
+</html>
